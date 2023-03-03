@@ -1,4 +1,5 @@
 const express = require('express');
+const Prompt = require('../models/promptModel');
 
 const router = express.Router();
 
@@ -14,8 +15,21 @@ router.get('/:id', (req, res) => {
 })
 
 //post a new prompt
-router.post('/', (req, res) => {
-    res.json({mssg: 'POST new prompt'});
+router.post('/', async (req, res) => {
+    const {promptType, prompt} = req.body;
+    const responseTime = 0;
+    //TODO start tracking response time
+    //TODO call GPT API with prompt
+    const response = 'TODO';
+    console.log(promptType, prompt, response, responseTime);
+
+    try {
+        const result = await Prompt.create({promptType, prompt, response, responseTime});
+        res.status(200).json(result);
+    } catch (err) {
+        console.log(err);
+        res.status(400).json({error: err.message});
+    }
 })
 
 //delete a prompt
