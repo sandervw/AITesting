@@ -25,9 +25,10 @@ router.get('/:id', (req, res) => {
 //post a new prompt
 router.post('/', async (req, res) => {
     const {promptType, prompt} = req.body;
-    const responseTime = 0;
-    //TODO start tracking response time
     try {
+
+        let start = Date.now();
+        //get response obj from openAI API
         const response = await openai.createChatCompletion({
             model: "gpt-3.5-turbo", //GPT 3.5 : https://platform.openai.com/docs/models/gpt-3-5
             messages: [{
@@ -37,9 +38,20 @@ router.post('/', async (req, res) => {
             temperature: 0.9, //used to determine how varied the responses are : 0 is same every time
             max_tokens: 1000,
         })
-        console.log(promptType, prompt, responseTime);
-        //const result = await Prompt.create({promptType, prompt, response, responseTime});
-        res.status(200).json(response.data);
+        const responseTime = Date.now() - start;
+        
+        //data contains the main object with ID, model, usage, and choices
+        let results = '';
+        const [...rest] = [response.data];
+        rest[0].choices.forEach((choice) => {
+            //Append any returned messages to the output
+            results += choice.message.content;
+        })
+
+        //Add response to the DB
+        await Prompt.create({promptType, prompt, 'response': results, responseTime});
+        res.status(200).json(results);
+
     } catch (err) {
         console.log(err);
         res.status(400).json({error: err.message});
