@@ -2,7 +2,9 @@ const express = require('express');
 const {
     getPrompts,
     getPrompt,
-    createPrompt
+    createPrompt,
+    deletePrompt,
+    updatePrompt
 } = require('../controllers/PromptController')
 
 const router = express.Router();
@@ -17,13 +19,9 @@ router.get('/:id', getPrompt)
 router.post('/', createPrompt);
 
 //delete a prompt
-router.delete('/:id', (req, res) => {
-    res.json({mssg: `DELETE single prompt: ${req.params.id}`});
-})
+router.delete('/:id', deletePrompt)
 
 //get all prompts
-router.patch('/:id', (req, res) => {
-    res.json({mssg: `UPDATE single prompt: ${req.params.id}`});
-})
+router.patch('/:id', updatePrompt)
 
 module.exports = router;

@@ -74,13 +74,66 @@ const createPrompt = async (req, res) => {
 }
 
 //delete a prompt
+const deletePrompt = async (req, res) => {
+    const {id} = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).json({error: 'No such prompt'});
 
+    try {
+        const prompt = await Prompt.findOneAndDelete({_id: id});
+        if(!prompt) return res.status(404).json({error: 'No such prompt'});
+        return res.status(200).json(prompt);
+    } catch (err) {
+        console.log(err);
+        res.status(404).json(err);
+    }
+}
 
 //update a prompt
+const updatePrompt = async (req, res) => {
+    const {id} = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).json({error: 'No such prompt'});
+    const {promptType, prompt} = req.body;
 
+    try {
+        let start = Date.now();
+        //get response obj from openAI API
+        const response = await openai.createChatCompletion({
+            model: "gpt-3.5-turbo", //GPT 3.5 : https://platform.openai.com/docs/models/gpt-3-5
+            messages: [{
+                role: "user",
+                content: prompt
+            }],
+            temperature: 0.9, //used to determine how varied the responses are : 0 is same every time
+            max_tokens: 1000,
+        })
+        const responseTime = Date.now() - start;
+        
+        //data contains the main object with ID, model, usage, and choices
+        let results = '';
+        const [...rest] = [response.data];
+        rest[0].choices.forEach((choice) => {
+            //Append any returned messages to the output
+            results += choice.message.content;
+        })
+        //Add response to the DB
+        const returnVal = await Prompt.findOneAndUpdate({_id: id}, {
+            'response': results,
+            ...req.body
+        })
+        if(!returnVal) return res.status(404).json({error: 'No such prompt'});
+        res.status(200).json(returnVal);
+
+    } catch (err) {
+        console.log(err);
+        res.status(400).json({error: err.message});
+    }
+}
 
 module.exports = {
     getPrompts,
     getPrompt,
-    createPrompt
+    createPrompt,
+    deletePrompt,
+    updatePrompt
 }
